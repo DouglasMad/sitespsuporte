@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupMenu();
   if (byId('brief')) setupForm();
   setupWhatsappFloat();
+  setupCarousel();
   setupMotion();
 });
 
@@ -110,6 +111,105 @@ function setupWhatsappFloat() {
   zones.forEach(zone => observer.observe(zone));
 }
 
+function setupCarousel() {
+  const carousel = document.querySelector('.project-carousel');
+  if (!carousel) return;
+
+  const INTERVAL = 6000;
+  const SWIPE_DISTANCE = 50;
+  const slides = [...carousel.querySelectorAll('.project')];
+  const dots = [...carousel.querySelectorAll('.carousel-dot')];
+  const toggle = carousel.querySelector('.carousel-toggle');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let current = 0;
+  let timer = null;
+  let playing = !reduced.matches;
+  let hovered = false;
+  let focused = false;
+  let inView = true;
+
+  const show = index => {
+    current = (index + slides.length) % slides.length;
+    slides.forEach((slide, i) => slide.classList.toggle('is-active', i === current));
+    dots.forEach((dot, i) => {
+      if (i === current) dot.setAttribute('aria-current', 'true');
+      else dot.removeAttribute('aria-current');
+    });
+  };
+
+  // Só roda com o carrossel à vista e sem o visitante a interagir com ele.
+  const restart = () => {
+    clearInterval(timer);
+    if (playing && !hovered && !focused && inView && !document.hidden) {
+      timer = setInterval(() => show(current + 1), INTERVAL);
+    }
+  };
+
+  const setPlaying = value => {
+    playing = value;
+    toggle.classList.toggle('is-paused', !playing);
+    toggle.setAttribute('aria-label', playing ? 'Pausar a rotação dos projetos' : 'Retomar a rotação dos projetos');
+    carousel.querySelector('.project-slides').setAttribute('aria-live', playing ? 'off' : 'polite');
+    restart();
+  };
+
+  const go = index => {
+    show(index);
+    restart();
+  };
+
+  dots.forEach((dot, i) => dot.addEventListener('click', () => go(i)));
+  carousel.querySelectorAll('[data-step]').forEach(arrow => {
+    arrow.addEventListener('click', () => go(current + Number(arrow.dataset.step)));
+  });
+  toggle.addEventListener('click', () => setPlaying(!playing));
+
+  carousel.addEventListener('pointerenter', event => {
+    if (event.pointerType !== 'mouse') return;
+    hovered = true;
+    restart();
+  });
+  carousel.addEventListener('pointerleave', event => {
+    if (event.pointerType !== 'mouse') return;
+    hovered = false;
+    restart();
+  });
+  // Um clique de rato deixa o foco no botão; só a navegação por teclado pausa.
+  carousel.addEventListener('focusin', event => {
+    focused = event.target.matches(':focus-visible');
+    restart();
+  });
+  carousel.addEventListener('focusout', () => {
+    focused = false;
+    restart();
+  });
+
+  let touchStart = null;
+  carousel.addEventListener('touchstart', event => {
+    touchStart = event.touches[0];
+  }, { passive: true });
+  carousel.addEventListener('touchend', event => {
+    if (!touchStart) return;
+    const dx = event.changedTouches[0].clientX - touchStart.clientX;
+    const dy = event.changedTouches[0].clientY - touchStart.clientY;
+    touchStart = null;
+    if (Math.abs(dx) > SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy)) go(current + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+
+  document.addEventListener('visibilitychange', restart);
+  reduced.addEventListener('change', event => {
+    if (event.matches) setPlaying(false);
+  });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(entries => {
+      inView = entries[entries.length - 1].isIntersecting;
+      restart();
+    }, { threshold: .4 }).observe(carousel);
+  }
+
+  setPlaying(playing);
+}
+
 function formatCount(el, value) {
   const [integer, decimals] = value.toFixed(Number(el.dataset.decimals || 0)).split('.');
   return integer.replace(/\B(?=(\d{3})+$)/g, '.') + (decimals ? ',' + decimals : '') + (el.dataset.suffix || '');
@@ -147,7 +247,7 @@ function setupMotion() {
     });
   }, { threshold: .12 });
 
-  document.querySelectorAll('.hero-copy,.sectiontop,.service,.project,.portfolio-card,.about,.steps article,.contact').forEach((el, i) => {
+  document.querySelectorAll('.hero-copy,.sectiontop,.service,.project-carousel,.portfolio-card,.about,.steps article,.contact').forEach((el, i) => {
     el.style.setProperty('--reveal-delay', el.matches('.service,.steps article') ? (i % 4) * 65 + 'ms' : '0ms');
     el.classList.add('motion-reveal');
     observer.observe(el);

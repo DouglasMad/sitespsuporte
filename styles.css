@@ -136,7 +136,8 @@ h3 { font-size: 20px; font-weight: 800; letter-spacing: -.4px; }
 .browser-bar span { flex: 1; min-width: 0; margin-left: 8px; padding: 3px 10px; border-radius: 10px; background: #fff; color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Projetos */
-.project { position: relative; overflow: hidden; background: var(--ink); color: #fff; border-radius: 22px; padding: 48px; display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 60px; align-items: center; }
+.project-carousel { position: relative; overflow: hidden; background: var(--ink); color: #fff; border-radius: 22px; }
+.project { position: relative; padding: 48px; display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 60px; align-items: center; }
 .project::before { content: ""; position: absolute; top: -35%; left: -55%; width: 40%; height: 180%; background: linear-gradient(90deg, transparent, #ffffff08, transparent); transform: rotate(20deg); pointer-events: none; animation: project-glow 12s ease-in-out infinite; }
 .project > * { position: relative; z-index: 1; }
 .project p { color: var(--on-dark); line-height: 1.7; }
@@ -148,7 +149,24 @@ h3 { font-size: 20px; font-weight: 800; letter-spacing: -.4px; }
 .tags span, .expertise span { border: 1px solid var(--line-dark); padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 @keyframes project-glow { 0%, 60% { left: -55%; } 90%, 100% { left: 125%; } }
 
-.portfolio-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
+/* Os slides ocupam a mesma célula: a altura é a do maior e a página não salta. */
+.js .project-slides { display: grid; }
+.js .project-slides > .project { grid-area: 1 / 1; min-width: 0; padding-bottom: 24px; opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility .5s ease; }
+.js .project-slides > .project.is-active { opacity: 1; visibility: visible; }
+.carousel-controls { display: none; }
+.js .carousel-controls { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; padding: 0 48px 28px; }
+.carousel-controls button { width: 36px; height: 36px; padding: 0; border: 1px solid var(--line-dark); border-radius: 50%; background: none; color: #fff; font: inherit; font-size: 15px; line-height: 1; cursor: pointer; transition: border-color .2s ease, color .2s ease; }
+.carousel-controls button:hover { border-color: var(--green); color: var(--green); }
+.carousel-controls button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.carousel-controls .carousel-dot { position: relative; width: 24px; border: 0; }
+.carousel-dot::before { content: ""; position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--line-dark); transition: background-color .2s ease; }
+.carousel-dot:hover::before { background: var(--on-dark); }
+.carousel-dot[aria-current="true"]::before { background: var(--green); }
+.carousel-controls .carousel-toggle { position: relative; margin-left: 8px; }
+.carousel-toggle::before { content: ""; position: absolute; top: 50%; left: 50%; width: 10px; height: 12px; margin: -6px 0 0 -5px; border: solid currentColor; border-width: 0 3px; }
+.carousel-toggle.is-paused::before { width: 0; margin-left: -4px; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent currentColor; }
+
+.portfolio-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 22px; }
 .portfolio-card { display: block; border: 1px solid var(--line); border-radius: 15px; overflow: hidden; transition: transform .25s ease, box-shadow .25s ease; }
 .project-cover { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
 .portfolio-body { padding: 20px; }
@@ -239,10 +257,16 @@ form .btn { width: 100%; }
   .stats { gap: 6px; }
   .stat { padding: 10px; }
   .stat strong { font-size: 15px; }
-  .services, .portfolio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .services { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
+  .portfolio-grid { grid-template-columns: minmax(0, 1fr); }
+  .portfolio-card { display: grid; grid-template-columns: 38% minmax(0, 1fr); }
+  .portfolio-card .browser-bar { display: none; }
+  .portfolio-card .browser { display: flex; }
+  .portfolio-card .project-cover { height: 100%; aspect-ratio: auto; }
+  .js .carousel-controls { padding: 0 30px 24px; }
   .studio { padding: 28px; }
   .dashboard { padding: 24px; }
   .stats { gap: 12px; }
@@ -269,7 +293,6 @@ form .btn { width: 100%; }
 }
 
 @media (max-width: 650px) {
-  .portfolio-grid { grid-template-columns: minmax(0, 1fr); }
   .services { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .service { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; padding: 16px; }
   .service-head { grid-row: span 3; align-items: flex-start; }
@@ -278,10 +301,7 @@ form .btn { width: 100%; }
   .service h3 { margin: 0; font-size: 18px; }
   .service p { margin: 5px 0 8px; }
   .service a { margin: 0; }
-  .portfolio-card { display: grid; grid-template-columns: 38% minmax(0, 1fr); }
-  .portfolio-card .browser-bar, .portfolio-body p, .bi-note, .bi-tiles { display: none; }
-  .portfolio-card .browser { display: flex; }
-  .portfolio-card .project-cover { height: 100%; aspect-ratio: auto; }
+  .portfolio-body p, .bi-note, .bi-tiles { display: none; }
   .portfolio-body { padding: 14px; }
   .portfolio-body small { font-size: 10px; letter-spacing: 1px; }
   .portfolio-body h3 { margin: 6px 0 8px; font-size: 16px; }
@@ -304,6 +324,7 @@ form .btn { width: 100%; }
   .float { margin: 12px 0 0; padding: 14px; transform: none; }
   .project-title { font-size: 38px; }
   .project, .contact, .about { padding: 25px; }
+  .js .carousel-controls { padding: 0 25px 22px; }
   section { padding: 45px 0; }
   .site-footer { flex-direction: column; align-items: start; }
   .sectiontop { margin-bottom: 25px; }
@@ -311,7 +332,7 @@ form .btn { width: 100%; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .btn, .site-nav a, .service, .service a, .service.motion-reveal, .motion-reveal, .portfolio-card, .portfolio-card.motion-reveal, .project-shot, .whatsapp-float, .chart.motion-chart .bar, .chart.motion-chart .trend { transition: none; }
+  .btn, .site-nav a, .service, .service a, .service.motion-reveal, .motion-reveal, .portfolio-card, .portfolio-card.motion-reveal, .project-shot, .whatsapp-float, .chart.motion-chart .bar, .chart.motion-chart .trend, .js .project-slides > .project, .carousel-controls button, .carousel-dot::before { transition: none; }
   .motion-reveal { opacity: 1; transform: none; }
   .chart.motion-chart .bar { transform: none; }
   .chart.motion-chart .trend { clip-path: none; }
